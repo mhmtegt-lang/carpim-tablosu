@@ -70,7 +70,7 @@ class CCCManager:
                     st.session_state['current_phase'] = 'COMPLETED_LEARNING'
             else:
                 st.session_state['feedback'] = "WRONG"
-                # YANLIŞ CEVAPTA BAŞA DÖNME KURALI (Source 17)
+                # YANLIŞ CEVAPTA BAŞA DÖNME KURALI
                 st.session_state['learning_step'] = 0 
         except ValueError:
             pass
@@ -102,7 +102,7 @@ st.markdown("""
 <style>
     .big-font { font-size:40px !important; font-weight:bold; text-align:center; color:#333; }
     .card { background-color: #f0f2f6; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 20px;}
-    .hidden-card { background-color: #e0e0e0; color: #e0e0e0; padding: 30px; border-radius: 15px; text-align: center; border: 3px dashed #bbb; user-select: none;}
+    .hidden-card { background-color: #e3f2fd; color: #1565c0; padding: 30px; border-radius: 15px; text-align: center; border: 3px solid #90caf9; user-select: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -147,10 +147,11 @@ def main():
                 st.rerun()
                 
         elif step == 1: # KAPAT (COVER)
-            st.markdown(f"<div class='hidden-card'><div class='big-font'>GİZLİ</div></div>", unsafe_allow_html=True)
-            st.warning("✍️ Aklındaki cevabı yaz.")
+            # BURAYI DEĞİŞTİRDİK: Artık soruyu gösteriyor, cevabı gizliyor.
+            st.markdown(f"<div class='hidden-card'><div class='big-font'>{current_q['q']} = ?</div></div>", unsafe_allow_html=True)
+            st.warning("✍️ İşlemin sonucu neydi?")
             with st.form("learn_form"):
-                ans = st.number_input("Sonuç:", step=1)
+                ans = st.number_input("Cevap:", step=1)
                 if st.form_submit_button("Kontrol Et", use_container_width=True):
                     manager.check_learning_answer(ans)
                     st.rerun()
