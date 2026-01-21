@@ -4,29 +4,23 @@ import random
 # --- 1. SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Çarpım Tablosu", page_icon="🎓", layout="centered")
 
-# --- 2. TASARIM (ZORUNLU RENK AYARLARI) ---
+# --- 2. TASARIM (CSS VE ANİMASYONLAR) ---
 st.markdown("""
 <style>
-    /* 1. TÜM ARKA PLANI VE YAZILARI ZORLA AYARLA */
+    /* 1. GENEL AYARLAR */
     .stApp {
         background-color: #ffffff !important;
     }
-    
-    /* Tüm yazıları koyu renk yap (Okunmama sorununu çözer) */
     p, h1, h2, h3, h4, li, span, div, label {
         color: #1e293b !important;
     }
-    
-    /* Başlık özel rengi */
     h1 {
-        color: #1e3a8a !important; /* Koyu Mavi */
+        color: #1e3a8a !important;
         text-align: center;
         font-family: sans-serif;
         font-weight: 800;
         margin-bottom: 5px;
     }
-    
-    /* Alt başlık */
     .subtitle {
         text-align: center;
         color: #64748b !important;
@@ -34,26 +28,16 @@ st.markdown("""
         margin-bottom: 30px;
     }
 
-    /* BİLGİ KUTUSU (Nasıl Çalışır) */
+    /* BİLGİ KUTUSU */
     .info-box {
-        background-color: #f0f9ff !important; /* Çok açık mavi */
+        background-color: #f0f9ff !important;
         padding: 20px;
         border-radius: 15px;
         border: 1px solid #bae6fd;
         margin-bottom: 25px;
     }
-    .info-box h3 {
-        color: #0369a1 !important;
-        margin-bottom: 10px;
-        font-size: 18px;
-    }
-    .info-box li {
-        color: #0c4a6e !important;
-        font-size: 16px;
-        margin-bottom: 5px;
-    }
 
-    /* KART TASARIMI (Sorular için) */
+    /* NORMAL KART TASARIMI */
     .card {
         background-color: #ffffff !important;
         padding: 40px;
@@ -69,9 +53,50 @@ st.markdown("""
         color: #1e293b !important;
     }
 
-    /* BUTONLARI RENKLENDİRME (Yeşil ve Mor) */
+    /* --- YENİ ANİMASYONLU GİZLİ KART --- */
     
-    /* Sol Kolon (Yeşil Buton) */
+    /* Animasyon Tanımı: Yukarıdan aşağı süzülme ve netleşme */
+    @keyframes slide-down-fade {
+        0% {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .hidden-card {
+        /* Animasyonu uygula: 0.5 saniye sürsün */
+        animation: slide-down-fade 0.5s ease-out forwards;
+        
+        background-color: #f8fafc !important;
+        /* Perde hissi veren çapraz çizgiler */
+        background-image: repeating-linear-gradient(
+            45deg,
+            #f1f5f9,
+            #f1f5f9 10px,
+            #f8fafc 10px,
+            #f8fafc 20px
+        );
+        padding: 40px;
+        border-radius: 20px;
+        text-align: center;
+        border: 3px dashed #cbd5e1;
+        margin-bottom: 20px;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.05); /* İç gölge */
+    }
+    
+    .hidden-text {
+        font-size: 45px;
+        font-weight: bold;
+        color: #94a3b8 !important; /* Silik renk */
+        text-shadow: 1px 1px 0 #fff;
+    }
+
+    /* BUTONLAR */
+    /* Sol (Yeşil) */
     div[data-testid="column"]:nth-of-type(1) div.stButton > button {
         background-color: #22c55e !important;
         color: white !important;
@@ -85,12 +110,9 @@ st.markdown("""
         background-color: #16a34a !important;
         transform: scale(1.02);
     }
-    /* Sol kolondaki yazıların rengini beyaz yapma (Buton içi hariç) */
-    div[data-testid="column"]:nth-of-type(1) div.stButton > button p {
-        color: white !important;
-    }
+    div[data-testid="column"]:nth-of-type(1) div.stButton > button p { color: white !important; }
 
-    /* Sağ Kolon (Mor Buton) */
+    /* Sağ (Mor) */
     div[data-testid="column"]:nth-of-type(2) div.stButton > button {
         background-color: #a855f7 !important;
         color: white !important;
@@ -104,12 +126,9 @@ st.markdown("""
         background-color: #9333ea !important;
         transform: scale(1.02);
     }
-    /* Sağ kolondaki yazıların rengini beyaz yapma */
-    div[data-testid="column"]:nth-of-type(2) div.stButton > button p {
-        color: white !important;
-    }
+    div[data-testid="column"]:nth-of-type(2) div.stButton > button p { color: white !important; }
 
-    /* Standart (Gri/Beyaz) Butonlar (Seçenekler için) */
+    /* Navigasyon ve Seçenek Butonları */
     .stButton > button {
         background-color: white;
         color: #334155;
@@ -124,8 +143,13 @@ st.markdown("""
         color: #3b82f6 !important;
         background-color: #eff6ff;
     }
+    
+    /* Geri butonunu küçült */
+    div[data-testid="stVerticalBlock"] > div > div[data-testid="stButton"] > button {
+        height: auto !important;
+        padding: 10px !important;
+    }
 
-    /* Seviye Seçim Kutusu (Selectbox) */
     div[data-baseweb="select"] > div {
         background-color: white !important;
         color: black !important;
@@ -153,7 +177,7 @@ DIFFICULTY_LEVELS = {
     ]
 }
 
-# --- 4. YÖNETİCİ SINIFI (LOGIC) ---
+# --- 4. YÖNETİCİ SINIFI ---
 class CCCManager:
     def __init__(self):
         if 'manager_initialized' not in st.session_state:
@@ -204,17 +228,17 @@ class CCCManager:
         })
         self.generate_options(st.session_state['question_queue'][0]['a'])
 
-# --- 5. ANA UYGULAMA (VIEW) ---
+# --- 5. ANA UYGULAMA ---
 def main():
     manager = CCCManager()
     phase = st.session_state['current_phase']
 
-    # Başlık Alanı
+    # --- BAŞLIK ---
     st.markdown("<h1>Kapat-Kopyala-Karşılaştır</h1>", unsafe_allow_html=True)
     st.markdown("<div class='subtitle'>Çarpım Tablosu Öğretimi</div>", unsafe_allow_html=True)
 
+    # --- ANA MENÜ ---
     if phase == 'MENU':
-        # Bilgi Kutusu
         st.markdown("""
         <div class="info-box">
             <h3>Nasıl Çalışır?</h3>
@@ -226,9 +250,7 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-        # Butonlar
         col1, col2 = st.columns(2)
-        
         with col1:
             if st.button("📖\nÖğretim Modu\n(Adım Adım)", use_container_width=True):
                 manager.start_learning("Basit (2-5 Çarpanları)")
@@ -244,7 +266,13 @@ def main():
         secim = st.selectbox("Seviye:", list(DIFFICULTY_LEVELS.keys()), label_visibility="collapsed")
         st.session_state['difficulty'] = secim
 
+    # --- ÖĞRENME MODU ---
     elif phase == 'LEARNING':
+        # Geri Butonu
+        if st.button("⬅️ Ana Menüye Dön"):
+            manager._reset_state()
+            st.rerun()
+
         q_idx = st.session_state['current_q_index']
         queue = st.session_state['question_queue']
         current_q = queue[q_idx]
@@ -268,10 +296,12 @@ def main():
                 st.session_state['learning_step'] = 1
                 st.rerun()
 
-        elif step == 1: # KAPAT/SEÇ
+        elif step == 1: # KAPAT/SEÇ (ANİMASYONLU)
+            # Burada 'hidden-card' class'ı CSS animasyonunu tetikler
             st.markdown(f"""
-            <div class="card" style="border-style: dashed; background-color: #f8fafc !important;">
-                <div class="big-text" style="color: #94a3b8 !important;">{current_q['q']} = ?</div>
+            <div class="hidden-card">
+                <div style="font-size: 20px; margin-bottom: 10px;">🙈 KAPALI</div>
+                <div class="hidden-text">{current_q['q']} = ?</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -290,7 +320,12 @@ def main():
                         st.session_state['learning_step'] = 0
                     st.rerun()
 
+    # --- DEĞERLENDİRME MODU ---
     elif phase == 'ASSESSMENT':
+        if st.button("⬅️ Sınavdan Çık"):
+            manager._reset_state()
+            st.rerun()
+
         q_idx = st.session_state['current_q_index']
         queue = st.session_state['question_queue']
         current_q = queue[q_idx]
@@ -316,6 +351,7 @@ def main():
                     st.session_state['current_phase'] = 'COMPLETED_ASSESSMENT'
                 st.rerun()
 
+    # --- TAMAMLANMA ---
     elif phase == 'COMPLETED_LEARNING':
         st.balloons()
         st.success("Tebrikler! Seviye Tamamlandı.")
