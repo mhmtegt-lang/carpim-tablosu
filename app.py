@@ -37,7 +37,7 @@ class CCCManager:
         st.session_state['learning_step'] = 0 
         st.session_state['feedback'] = None
         st.session_state['assessment_score'] = 0
-        st.session_state['current_options'] = [] # Şıklar için yeni hafıza
+        st.session_state['current_options'] = []
 
     def start_learning_mode(self, difficulty: str):
         st.session_state['difficulty'] = difficulty
@@ -49,40 +49,48 @@ class CCCManager:
         st.session_state['current_phase'] = 'LEARNING'
         st.session_state['feedback'] = None
 
+    def next_level(self):
+        """Mevcut seviyeyi bulup bir sonrakine geçer."""
+        levels = list(DIFFICULTY_LEVELS.keys())
+        current_diff = st.session_state['difficulty']
+        
+        try:
+            current_index = levels.index(current_diff)
+            # Eğer son seviye değilse bir sonrakine geç
+            if current_index + 1 < len(levels):
+                next_diff = levels[current_index + 1]
+                self.start_learning_mode(next_diff)
+                st.rerun()
+            else:
+                self.go_home()
+        except ValueError:
+            self.go_home()
+
     def generate_options(self):
-        """Doğru cevabın yanına 2 tane mantıklı yanlış cevap üretir."""
         current_q = st.session_state['question_queue'][st.session_state['current_q_index']]
         correct_ans = current_q['a']
-        
-        # Yanlış cevapları üret (Cevaba yakın sayılar seçelim)
-        options = {correct_ans} # Küme kullanarak tekrarı önle
+        options = {correct_ans}
         while len(options) < 3:
-            # Cevabın biraz altı veya biraz üstü rastgele sayılar
             fake = correct_ans + random.randint(-5, 5)
             if fake > 0 and fake != correct_ans:
                 options.add(fake)
-        
-        # Şıkları listeye çevir ve karıştır
         opt_list = list(options)
         random.shuffle(opt_list)
         st.session_state['current_options'] = opt_list
 
     def check_learning_answer(self, user_answer):
         current_q = st.session_state['question_queue'][st.session_state['current_q_index']]
-        
         if int(user_answer) == current_q['a']:
             st.session_state['feedback'] = "CORRECT"
             if st.session_state['current_q_index'] < len(st.session_state['question_queue']) - 1:
                 st.session_state['current_q_index'] += 1
-                st.session_state['learning_step'] = 0 # Başa sar (Bak)
+                st.session_state['learning_step'] = 0
             else:
                 st.session_state['current_phase'] = 'COMPLETED_LEARNING'
         else:
             st.session_state['feedback'] = "WRONG"
-            # KURAL: Yanlışta başa dön (Bak-Kapat-Seç)
             st.session_state['learning_step'] = 0 
 
-    # ... Diğer metodlar aynı kalacak (Assessment logic vb.) ...
     def start_assessment_mode(self):
         all_questions = []
         for level in DIFFICULTY_LEVELS.values():
@@ -120,7 +128,6 @@ st.markdown("""
     .big-font { font-size:40px !important; font-weight:bold; text-align:center; color:#333; }
     .card { background-color: #f0f2f6; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 20px;}
     .hidden-card { background-color: #e3f2fd; color: #1565c0; padding: 30px; border-radius: 15px; text-align: center; border: 3px solid #90caf9; user-select: none;}
-    /* Butonları büyütmek için CSS */
     div.stButton > button {
         width: 100%;
         height: 60px;
@@ -132,94 +139,4 @@ st.markdown("""
 
 def main():
     manager = CCCManager()
-    phase = st.session_state['current_phase']
-
-    st.title("🎓 Çarpım Tablosu")
-    
-    if phase == 'MENU':
-        st.info("Çarpım tablosunu ezberlemek için bir mod seçin.")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("📚 Öğrenme Modu")
-            diff = st.selectbox("Seviye:", list(DIFFICULTY_LEVELS.keys()))
-            if st.button("Başla (Öğrenme)", use_container_width=True):
-                manager.start_learning_mode(diff)
-                st.rerun()
-        with col2:
-            st.subheader("📝 Sınav Modu")
-            st.write("Karışık 10 soru ile kendini dene.")
-            if st.button("Başla (Sınav)", type="primary", use_container_width=True):
-                manager.start_assessment_mode()
-                st.rerun()
-
-    elif phase == 'LEARNING':
-        q_idx = st.session_state['current_q_index']
-        queue = st.session_state['question_queue']
-        current_q = queue[q_idx]
-        step = st.session_state['learning_step']
-        
-        st.progress((q_idx) / len(queue), text=f"İlerleme: {q_idx}/{len(queue)}")
-        
-        if step == 0: # GÖR (SHOW)
-            st.markdown(f"<div class='card'><div class='big-font'>{current_q['q']} = {current_q['a']}</div></div>", unsafe_allow_html=True)
-            st.info("👁️ İşleme BAK. Ezberleyince 'Kapat' de.")
-            
-            if st.session_state.get('feedback') == 'WRONG':
-                st.error("⚠️ Yanlış cevap! Başa döndük, tekrar incele.")
-            
-            if st.button("🙈 Kapat ve Seç", use_container_width=True):
-                manager.generate_options() # Şıkları oluştur
-                st.session_state['learning_step'] = 1
-                st.rerun()
-                
-        elif step == 1: # KAPAT & SEÇ (COVER & SELECT)
-            st.markdown(f"<div class='hidden-card'><div class='big-font'>{current_q['q']} = ?</div></div>", unsafe_allow_html=True)
-            st.warning("👇 Doğru cevabı seç.")
-            
-            # ŞIKLARI GÖSTER (3 Buton Yan Yana)
-            cols = st.columns(3)
-            options = st.session_state['current_options']
-            
-            for i, opt in enumerate(options):
-                if cols[i].button(str(opt), use_container_width=True):
-                    manager.check_learning_answer(opt)
-                    st.rerun()
-
-    elif phase == 'COMPLETED_LEARNING':
-        st.balloons()
-        st.success("Tebrikler! Bu seviyeyi bitirdin.")
-        if st.button("Başa Dön"):
-            manager.go_home()
-            st.rerun()
-
-    elif phase == 'ASSESSMENT':
-        st.subheader("Yoklama Kağıdı")
-        st.caption("Sınavda klasik usul yazarak cevaplıyoruz.")
-        with st.form("exam"):
-            answers = {}
-            cols = st.columns(2)
-            for i, q in enumerate(st.session_state['question_queue']):
-                with cols[i % 2]:
-                    answers[i] = st.number_input(f"{q['q']} = ?", key=f"e_{i}", step=1)
-            if st.form_submit_button("Sınavı Bitir"):
-                manager.submit_assessment(answers)
-                st.rerun()
-
-    elif phase == 'COMPLETED_ASSESSMENT':
-        score = st.session_state['assessment_score']
-        st.metric("Puanın", f"{score} / 10")
-        
-        if score == 10: 
-            st.balloons()
-            st.success("Mükemmel! 🌟")
-        elif score >= 7:
-            st.info("Gayet iyi! 👍")
-        else:
-            st.warning("Biraz daha pratik yapmalısın. 💪")
-
-        if st.button("Tamam"):
-            manager.go_home()
-            st.rerun()
-
-if __name__ == "__main__":
-    main()
+    phase = st.session_state
