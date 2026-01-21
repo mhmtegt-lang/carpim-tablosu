@@ -37,7 +37,7 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    /* NORMAL KART TASARIMI */
+    /* NORMAL KART TASARIMI (AÇIK) */
     .card {
         background-color: #ffffff !important;
         padding: 40px;
@@ -53,46 +53,47 @@ st.markdown("""
         color: #1e293b !important;
     }
 
-    /* --- YENİ ANİMASYONLU GİZLİ KART --- */
-    
-    /* Animasyon Tanımı: Yukarıdan aşağı süzülme ve netleşme */
-    @keyframes slide-down-fade {
-        0% {
-            opacity: 0;
-            transform: translateY(-30px) scale(0.95);
-        }
-        100% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+    /* --- "KAPALI" KUTU TASARIMI (ÜSTTEKİ PERDE) --- */
+    @keyframes slide-down {
+        0% { transform: scaleY(0); transform-origin: top; }
+        100% { transform: scaleY(1); transform-origin: top; }
     }
 
-    .hidden-card {
-        /* Animasyonu uygula: 0.5 saniye sürsün */
-        animation: slide-down-fade 0.5s ease-out forwards;
-        
-        background-color: #f8fafc !important;
-        /* Perde hissi veren çapraz çizgiler */
+    .covered-box {
+        animation: slide-down 0.4s ease-out forwards;
+        background-color: #f1f5f9 !important;
+        /* Çapraz çizgili desen (Kapalı hissi verir) */
         background-image: repeating-linear-gradient(
             45deg,
-            #f1f5f9,
+            #e2e8f0,
+            #e2e8f0 10px,
             #f1f5f9 10px,
-            #f8fafc 10px,
-            #f8fafc 20px
+            #f1f5f9 20px
         );
-        padding: 40px;
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        border: 2px dashed #cbd5e1;
+        margin-bottom: 20px;
+        color: #94a3b8 !important;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    /* --- SORU KUTUSU (AKTİF SORU) --- */
+    .question-box {
+        background-color: #eff6ff !important; /* Çok açık mavi */
+        border: 2px solid #3b82f6;
+        padding: 30px;
         border-radius: 20px;
         text-align: center;
-        border: 3px dashed #cbd5e1;
         margin-bottom: 20px;
-        box-shadow: inset 0 0 20px rgba(0,0,0,0.05); /* İç gölge */
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.15);
     }
-    
-    .hidden-text {
-        font-size: 45px;
-        font-weight: bold;
-        color: #94a3b8 !important; /* Silik renk */
-        text-shadow: 1px 1px 0 #fff;
+    .question-text {
+        font-size: 50px;
+        font-weight: 800;
+        color: #1d4ed8 !important; /* Canlı Mavi */
     }
 
     /* BUTONLAR */
@@ -128,14 +129,14 @@ st.markdown("""
     }
     div[data-testid="column"]:nth-of-type(2) div.stButton > button p { color: white !important; }
 
-    /* Navigasyon ve Seçenek Butonları */
+    /* Seçenek Butonları */
     .stButton > button {
         background-color: white;
         color: #334155;
         border: 2px solid #cbd5e1;
         border-radius: 12px;
         height: 60px;
-        font-size: 18px;
+        font-size: 20px;
         font-weight: bold;
     }
     .stButton > button:hover {
@@ -144,7 +145,7 @@ st.markdown("""
         background-color: #eff6ff;
     }
     
-    /* Geri butonunu küçült */
+    /* Geri butonu özel ayarı */
     div[data-testid="stVerticalBlock"] > div > div[data-testid="stButton"] > button {
         height: auto !important;
         padding: 10px !important;
@@ -233,7 +234,6 @@ def main():
     manager = CCCManager()
     phase = st.session_state['current_phase']
 
-    # --- BAŞLIK ---
     st.markdown("<h1>Kapat-Kopyala-Karşılaştır</h1>", unsafe_allow_html=True)
     st.markdown("<div class='subtitle'>Çarpım Tablosu Öğretimi</div>", unsafe_allow_html=True)
 
@@ -268,7 +268,6 @@ def main():
 
     # --- ÖĞRENME MODU ---
     elif phase == 'LEARNING':
-        # Geri Butonu
         if st.button("⬅️ Ana Menüye Dön"):
             manager._reset_state()
             st.rerun()
@@ -281,7 +280,8 @@ def main():
         st.progress((q_idx) / len(queue))
         st.caption(f"İlerleme: {q_idx + 1}/{len(queue)} - {st.session_state['difficulty']}")
 
-        if step == 0: # GÖR
+        if step == 0: # GÖR (Adım 1)
+            # Kartın kendisi
             st.markdown(f"""
             <div class="card">
                 <div class="big-text">{current_q['q']} = {current_q['a']}</div>
@@ -296,15 +296,22 @@ def main():
                 st.session_state['learning_step'] = 1
                 st.rerun()
 
-        elif step == 1: # KAPAT/SEÇ (ANİMASYONLU)
-            # Burada 'hidden-card' class'ı CSS animasyonunu tetikler
+        elif step == 1: # KAPAT/SEÇ (Adım 2)
+            # 1. ÜSTTE: Kapatıldığını gösteren çizgi/kutu (Görsel Hafıza)
+            st.markdown("""
+            <div class="covered-box">
+                🙈 CEVAP GİZLENDİ
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 2. ALTTA: Yeni Soru Kutusu (Aktif Alan)
             st.markdown(f"""
-            <div class="hidden-card">
-                <div style="font-size: 20px; margin-bottom: 10px;">🙈 KAPALI</div>
-                <div class="hidden-text">{current_q['q']} = ?</div>
+            <div class="question-box">
+                <div class="question-text">{current_q['q']} = ?</div>
             </div>
             """, unsafe_allow_html=True)
             
+            # 3. SEÇENEKLER
             cols = st.columns(3)
             for i, opt in enumerate(st.session_state['current_options']):
                 if cols[i].button(str(opt), key=f"opt_{i}", use_container_width=True):
