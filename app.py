@@ -90,7 +90,7 @@ class CCCManager:
         except ValueError:
             self.go_home()
 
-    # --- SINAV MODU YÖNETİMİ (YENİLENMİŞ) ---
+    # --- SINAV MODU YÖNETİMİ ---
     def start_assessment_mode(self):
         # Tüm havuzdan rastgele 10 soru seç
         all_questions = []
@@ -153,4 +153,11 @@ def main():
         with col1:
             st.subheader("📚 Öğrenme Modu")
             diff = st.selectbox("Seviye:", list(DIFFICULTY_LEVELS.keys()))
-            if st.button("Başla (Öğrenme)", use_container_width=
+            # DİKKAT: Aşağıdaki satırın sonundaki paranteze dikkat et!
+            if st.button("Başla (Öğrenme)", use_container_width=True):
+                manager.start_learning_mode(diff)
+                st.rerun()
+        with col2:
+            st.subheader("📝 Sınav Modu")
+            st.write("Karışık 10 soru. Bakalım kaç alacaksın?")
+            if st.button("Başla (S
