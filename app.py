@@ -4,101 +4,132 @@ import random
 # --- 1. SAYFA YAPILANDIRMASI ---
 st.set_page_config(page_title="Çarpım Tablosu", page_icon="🎓", layout="centered")
 
-# --- 2. TASARIM (CSS) ---
-# Gönderdiğin görseldeki tasarımı (Yeşil/Mor butonlar, Bilgi Kutusu) oluşturan kod
+# --- 2. TASARIM (ZORUNLU RENK AYARLARI) ---
 st.markdown("""
 <style>
-    /* Genel Arka Plan */
+    /* 1. TÜM ARKA PLANI VE YAZILARI ZORLA AYARLA */
     .stApp {
-        background-color: #ffffff;
+        background-color: #ffffff !important;
     }
     
-    /* Başlık Stili */
-    h1 {
-        color: #1e3a8a;
-        text-align: center;
-        font-family: 'Helvetica', sans-serif;
-        font-weight: 800;
-        margin-bottom: 0px;
+    /* Tüm yazıları koyu renk yap (Okunmama sorununu çözer) */
+    p, h1, h2, h3, h4, li, span, div, label {
+        color: #1e293b !important;
     }
+    
+    /* Başlık özel rengi */
+    h1 {
+        color: #1e3a8a !important; /* Koyu Mavi */
+        text-align: center;
+        font-family: sans-serif;
+        font-weight: 800;
+        margin-bottom: 5px;
+    }
+    
+    /* Alt başlık */
     .subtitle {
         text-align: center;
-        color: #64748b;
-        font-size: 20px;
+        color: #64748b !important;
+        font-size: 18px;
         margin-bottom: 30px;
     }
 
-    /* "Nasıl Çalışır" Kutusu (Açık Mavi) */
+    /* BİLGİ KUTUSU (Nasıl Çalışır) */
     .info-box {
-        background-color: #f0fdf4; /* Açık yeşilimsi/mavi ton */
-        background: linear-gradient(to right, #eff6ff, #f5f3ff);
-        padding: 25px;
+        background-color: #f0f9ff !important; /* Çok açık mavi */
+        padding: 20px;
         border-radius: 15px;
-        border: 1px solid #e0e7ff;
-        margin-bottom: 30px;
-        color: #1e293b;
+        border: 1px solid #bae6fd;
+        margin-bottom: 25px;
     }
     .info-box h3 {
-        color: #4338ca;
-        font-size: 18px;
+        color: #0369a1 !important;
         margin-bottom: 10px;
+        font-size: 18px;
     }
     .info-box li {
-        margin-bottom: 8px;
+        color: #0c4a6e !important;
         font-size: 16px;
+        margin-bottom: 5px;
     }
 
-    /* KART BUTONLAR İÇİN ÖZEL AYARLAR */
-    /* Sol Kolon (Öğretim Modu) Butonu -> YEŞİL */
-    div[data-testid="column"]:nth-of-type(1) div.stButton > button {
-        background-color: #22c55e !important;
-        color: white !important;
-        height: 180px !important; /* Yükseklik */
-        border-radius: 20px !important;
-        border: none !important;
-        font-size: 24px !important;
-        font-weight: bold !important;
-        box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.3) !important;
-        transition: transform 0.2s;
-        white-space: pre-wrap; /* Alt satıra geçmeye izin ver */
-    }
-    div[data-testid="column"]:nth-of-type(1) div.stButton > button:hover {
-        transform: scale(1.02);
-        background-color: #16a34a !important;
-    }
-
-    /* Sağ Kolon (Değerlendirme) Butonu -> MOR */
-    div[data-testid="column"]:nth-of-type(2) div.stButton > button {
-        background-color: #a855f7 !important;
-        color: white !important;
-        height: 180px !important;
-        border-radius: 20px !important;
-        border: none !important;
-        font-size: 24px !important;
-        font-weight: bold !important;
-        box-shadow: 0 10px 15px -3px rgba(168, 85, 247, 0.3) !important;
-        transition: transform 0.2s;
-        white-space: pre-wrap;
-    }
-    div[data-testid="column"]:nth-of-type(2) div.stButton > button:hover {
-        transform: scale(1.02);
-        background-color: #9333ea !important;
-    }
-    
-    /* Soru Kartları */
+    /* KART TASARIMI (Sorular için) */
     .card {
-        background-color: white;
+        background-color: #ffffff !important;
         padding: 40px;
         border-radius: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         text-align: center;
         border: 2px solid #e2e8f0;
         margin-bottom: 20px;
     }
     .big-text {
-        font-size: 50px;
+        font-size: 45px;
         font-weight: bold;
-        color: #1e293b;
+        color: #1e293b !important;
+    }
+
+    /* BUTONLARI RENKLENDİRME (Yeşil ve Mor) */
+    
+    /* Sol Kolon (Yeşil Buton) */
+    div[data-testid="column"]:nth-of-type(1) div.stButton > button {
+        background-color: #22c55e !important;
+        color: white !important;
+        border: none !important;
+        height: 150px;
+        font-size: 22px !important;
+        border-radius: 15px !important;
+        box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.4);
+    }
+    div[data-testid="column"]:nth-of-type(1) div.stButton > button:hover {
+        background-color: #16a34a !important;
+        transform: scale(1.02);
+    }
+    /* Sol kolondaki yazıların rengini beyaz yapma (Buton içi hariç) */
+    div[data-testid="column"]:nth-of-type(1) div.stButton > button p {
+        color: white !important;
+    }
+
+    /* Sağ Kolon (Mor Buton) */
+    div[data-testid="column"]:nth-of-type(2) div.stButton > button {
+        background-color: #a855f7 !important;
+        color: white !important;
+        border: none !important;
+        height: 150px;
+        font-size: 22px !important;
+        border-radius: 15px !important;
+        box-shadow: 0 4px 6px -1px rgba(168, 85, 247, 0.4);
+    }
+    div[data-testid="column"]:nth-of-type(2) div.stButton > button:hover {
+        background-color: #9333ea !important;
+        transform: scale(1.02);
+    }
+    /* Sağ kolondaki yazıların rengini beyaz yapma */
+    div[data-testid="column"]:nth-of-type(2) div.stButton > button p {
+        color: white !important;
+    }
+
+    /* Standart (Gri/Beyaz) Butonlar (Seçenekler için) */
+    .stButton > button {
+        background-color: white;
+        color: #334155;
+        border: 2px solid #cbd5e1;
+        border-radius: 12px;
+        height: 60px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+    .stButton > button:hover {
+        border-color: #3b82f6;
+        color: #3b82f6 !important;
+        background-color: #eff6ff;
+    }
+
+    /* Seviye Seçim Kutusu (Selectbox) */
+    div[data-baseweb="select"] > div {
+        background-color: white !important;
+        color: black !important;
+        border-color: #cbd5e1 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -180,82 +211,69 @@ def main():
 
     # Başlık Alanı
     st.markdown("<h1>Kapat-Kopyala-Karşılaştır</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Çarpım Tablosu Öğretimi</p>", unsafe_allow_html=True)
+    st.markdown("<div class='subtitle'>Çarpım Tablosu Öğretimi</div>", unsafe_allow_html=True)
 
     if phase == 'MENU':
-        # Bilgi Kutusu (Görseldeki Gibi)
+        # Bilgi Kutusu
         st.markdown("""
         <div class="info-box">
             <h3>Nasıl Çalışır?</h3>
             <ul>
-                <li><b>1. Oku:</b> İşlemi ve cevabını dikkatlice oku.</li>
-                <li><b>2. Kapat:</b> 'Kapat' butonuna basarak cevabı gizle.</li>
-                <li><b>3. Yaz:</b> Cevabı aklından bul.</li>
-                <li><b>4. Karşılaştır:</b> Seçeneklerden doğrusunu işaretle.</li>
+                <li><b>1. Oku:</b> İşlemi ve cevabını dikkatlice incele.</li>
+                <li><b>2. Kapat:</b> Butona basarak cevabı gizle.</li>
+                <li><b>3. Yaz/Seç:</b> Doğru cevabı seçeneklerden bul.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
 
-        # İki Büyük Buton (CSS ile şekillendirildi)
+        # Butonlar
         col1, col2 = st.columns(2)
         
         with col1:
-            # Yeşil Buton
-            if st.button("📖\nÖğretim Modu\n(Adım Adım Öğren)", use_container_width=True):
-                # Varsayılan olarak Basit seviyeden başlatıyoruz, içeride değiştirebilir
+            if st.button("📖\nÖğretim Modu\n(Adım Adım)", use_container_width=True):
                 manager.start_learning("Basit (2-5 Çarpanları)")
                 st.rerun()
 
         with col2:
-            # Mor Buton
-            if st.button("📋\nDeğerlendirme\n(Kendini Test Et)", use_container_width=True):
+            if st.button("🚀\nDeğerlendirme\n(Kendini Test Et)", use_container_width=True):
                 manager.start_assessment()
                 st.rerun()
 
-        # Seviye Seçimi (Öğretim Modu İçin)
         st.write("")
-        st.markdown("<div style='text-align: center; color: #64748b;'>👇 Öğretim Modu için Seviye Seçimi 👇</div>", unsafe_allow_html=True)
-        secilen_seviye = st.selectbox("Seviye:", list(DIFFICULTY_LEVELS.keys()), label_visibility="collapsed")
-        # Eğer kullanıcı seçim yaparsa session state'i güncelle
-        st.session_state['difficulty'] = secilen_seviye
-
+        st.markdown("<div style='text-align: center; font-weight: bold;'>👇 Öğretim Seviyesi Seçimi 👇</div>", unsafe_allow_html=True)
+        secim = st.selectbox("Seviye:", list(DIFFICULTY_LEVELS.keys()), label_visibility="collapsed")
+        st.session_state['difficulty'] = secim
 
     elif phase == 'LEARNING':
-        # Öğrenme Modu Ekranı
         q_idx = st.session_state['current_q_index']
         queue = st.session_state['question_queue']
         current_q = queue[q_idx]
         step = st.session_state['learning_step']
 
-        # İlerleme Çubuğu
         st.progress((q_idx) / len(queue))
-        st.caption(f"Soru {q_idx + 1} / {len(queue)} - Seviye: {st.session_state['difficulty']}")
+        st.caption(f"İlerleme: {q_idx + 1}/{len(queue)} - {st.session_state['difficulty']}")
 
-        if step == 0: # GÖR / OKU
+        if step == 0: # GÖR
             st.markdown(f"""
             <div class="card">
                 <div class="big-text">{current_q['q']} = {current_q['a']}</div>
             </div>
             """, unsafe_allow_html=True)
             
-            st.info("👁️ İyice ezberleyene kadar bak.")
-            
             if st.session_state.get('feedback') == 'WRONG':
-                st.error("⚠️ Yanlış cevap verdiğin için başa döndük. Tekrar odaklan!")
+                st.error("⚠️ Yanlış cevap! Başa döndük.")
 
-            if st.button("🙈 Kapat ve Yaz", use_container_width=True):
+            if st.button("🙈 Kapat ve Cevapla", use_container_width=True):
                 manager.generate_options(current_q['a'])
                 st.session_state['learning_step'] = 1
                 st.rerun()
 
-        elif step == 1: # KAPAT / SEÇ
+        elif step == 1: # KAPAT/SEÇ
             st.markdown(f"""
-            <div class="card" style="background-color: #f1f5f9; border-style: dashed;">
-                <div class="big-text" style="color: #94a3b8;">{current_q['q']} = ?</div>
+            <div class="card" style="border-style: dashed; background-color: #f8fafc !important;">
+                <div class="big-text" style="color: #94a3b8 !important;">{current_q['q']} = ?</div>
             </div>
             """, unsafe_allow_html=True)
-            
-            st.warning("👇 Doğru cevabı seç.")
             
             cols = st.columns(3)
             for i, opt in enumerate(st.session_state['current_options']):
@@ -269,20 +287,19 @@ def main():
                             st.session_state['current_phase'] = 'COMPLETED_LEARNING'
                     else:
                         st.session_state['feedback'] = "WRONG"
-                        st.session_state['learning_step'] = 0 # Başa dön kuralı
+                        st.session_state['learning_step'] = 0
                     st.rerun()
 
     elif phase == 'ASSESSMENT':
-        # Değerlendirme Modu Ekranı
         q_idx = st.session_state['current_q_index']
         queue = st.session_state['question_queue']
         current_q = queue[q_idx]
 
-        st.subheader(f"📝 Soru {q_idx + 1} / 10")
+        st.subheader(f"Soru {q_idx + 1} / 10")
         
         st.markdown(f"""
         <div class="card" style="border-color: #a855f7;">
-            <div class="big-text" style="color: #6b21a8;">{current_q['q']} = ?</div>
+            <div class="big-text" style="color: #6b21a8 !important;">{current_q['q']} = ?</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -301,8 +318,8 @@ def main():
 
     elif phase == 'COMPLETED_LEARNING':
         st.balloons()
-        st.success("🎉 Tebrikler! Bu seviyeyi tamamladın.")
-        if st.button("Ana Menüye Dön", use_container_width=True):
+        st.success("Tebrikler! Seviye Tamamlandı.")
+        if st.button("Ana Menü", use_container_width=True):
             manager._reset_state()
             st.rerun()
 
@@ -311,11 +328,11 @@ def main():
         st.balloons()
         st.markdown(f"""
         <div class="card">
-            <h2>Sınav Sonucu</h2>
-            <div style="font-size: 80px; color: #4338ca;">{score} / 10</div>
+            <h2>Puanın</h2>
+            <div style="font-size: 80px; color: #4338ca !important;">{score} / 10</div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("Tekrar Dene", use_container_width=True):
+        if st.button("Ana Menü", use_container_width=True):
             manager._reset_state()
             st.rerun()
 
