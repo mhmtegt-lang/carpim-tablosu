@@ -1,355 +1,452 @@
-import streamlit as st
-import random
+import React, { useState, useEffect } from 'react';
+import { Check, X, RotateCcw, Award, BookOpen, ClipboardCheck } from 'lucide-react';
 
-# --- 1. SAYFA YAPILANDIRMASI ---
-st.set_page_config(page_title="Çarpım Tablosu", page_icon="🎓", layout="centered")
+const CarpimTablosuApp = () => {
+  const [mode, setMode] = useState('menu'); // menu, ogretim, degerlendirme
+  const [zorlukSeviyesi, setZorlukSeviyesi] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [userAnswer, setUserAnswer] = useState('');
+  const [isAnswerVisible, setIsAnswerVisible] = useState(true);
+  const [isCovered, setIsCovered] = useState(false);
+  const [showCheck, setShowCheck] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(null);
+  const [score, setScore] = useState(0);
+  const [completedProblems, setCompletedProblems] = useState([]);
+  const [degerlendirmeAnswers, setDegerlendirmeAnswers] = useState({});
+  const [degerlendirmeComplete, setDegerlendirmeComplete] = useState(false);
 
-# --- 2. TASARIM (CSS VE ANİMASYONLAR) ---
-st.markdown("""
-<style>
-    /* 1. GENEL AYARLAR */
-    .stApp { background-color: #ffffff !important; }
-    p, h1, h2, h3, h4, li, span, div, label { color: #1e293b !important; }
-    h1 { color: #1e3a8a !important; text-align: center; font-family: sans-serif; font-weight: 800; margin-bottom: 5px; }
-    .subtitle { text-align: center; color: #64748b !important; font-size: 18px; margin-bottom: 30px; }
+  // Zorluk seviyelerine göre çarpma işlemleri
+  const problemSets = {
+    kolay: [
+      { sayi1: 2, sayi2: 3 }, { sayi1: 2, sayi2: 4 }, { sayi1: 2, sayi2: 5 },
+      { sayi1: 3, sayi2: 3 }, { sayi1: 3, sayi2: 4 }, { sayi1: 3, sayi2: 5 },
+      { sayi1: 4, sayi2: 4 }, { sayi1: 4, sayi2: 5 }, { sayi1: 5, sayi2: 5 }
+    ],
+    orta: [
+      { sayi1: 2, sayi2: 6 }, { sayi1: 2, sayi2: 7 }, { sayi1: 2, sayi2: 8 }, { sayi1: 2, sayi2: 9 },
+      { sayi1: 3, sayi2: 6 }, { sayi1: 3, sayi2: 7 }, { sayi1: 3, sayi2: 8 }, { sayi1: 3, sayi2: 9 },
+      { sayi1: 4, sayi2: 6 }, { sayi1: 4, sayi2: 7 }, { sayi1: 4, sayi2: 8 }, { sayi1: 4, sayi2: 9 },
+      { sayi1: 5, sayi2: 6 }, { sayi1: 5, sayi2: 7 }, { sayi1: 5, sayi2: 8 }, { sayi1: 5, sayi2: 9 }
+    ],
+    zor: [
+      { sayi1: 6, sayi2: 6 }, { sayi1: 6, sayi2: 7 }, { sayi1: 6, sayi2: 8 }, { sayi1: 6, sayi2: 9 },
+      { sayi1: 7, sayi2: 7 }, { sayi1: 7, sayi2: 8 }, { sayi1: 7, sayi2: 9 },
+      { sayi1: 8, sayi2: 8 }, { sayi1: 8, sayi2: 9 },
+      { sayi1: 9, sayi2: 9 }
+    ]
+  };
 
-    /* BİLGİ KUTUSU */
-    .info-box { background-color: #f0f9ff !important; padding: 20px; border-radius: 15px; border: 1px solid #bae6fd; margin-bottom: 25px; }
+  const getCurrentProblems = () => {
+    if (!zorlukSeviyesi) return [];
+    return problemSets[zorlukSeviyesi];
+  };
 
-    /* KART TASARIMI */
-    .card { background-color: #ffffff !important; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); text-align: center; border: 2px solid #e2e8f0; margin-bottom: 20px; }
-    .big-text { font-size: 45px; font-weight: bold; color: #1e293b !important; }
+  const currentProblem = getCurrentProblems()[currentIndex];
 
-    /* KAPALI KUTU */
-    @keyframes slide-down { 0% { transform: scaleY(0); transform-origin: top; } 100% { transform: scaleY(1); transform-origin: top; } }
-    .covered-box {
-        animation: slide-down 0.4s ease-out forwards;
-        background-color: #f1f5f9 !important;
-        background-image: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 10px, #f1f5f9 10px, #f1f5f9 20px);
-        padding: 20px; border-radius: 15px; text-align: center; border: 2px dashed #cbd5e1; margin-bottom: 20px;
-        color: #94a3b8 !important; font-weight: bold; font-size: 18px;
-    }
+  const handleCover = () => {
+    setIsCovered(true);
+    setIsAnswerVisible(false);
+    setUserAnswer('');
+    setShowCheck(false);
+    setIsCorrect(null);
+  };
 
-    /* SORU KUTUSU */
-    .question-box { background-color: #eff6ff !important; border: 2px solid #3b82f6; padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.15); }
-    .question-text { font-size: 50px; font-weight: 800; color: #1d4ed8 !important; }
+  const handleUncover = () => {
+    const correct = parseInt(userAnswer) === (currentProblem.sayi1 * currentProblem.sayi2);
+    setIsCorrect(correct);
+    setIsCovered(false);
+    setIsAnswerVisible(true);
+    setShowCheck(true);
+    
+    if (correct) {
+      setScore(score + 1);
+      setCompletedProblems([...completedProblems, currentIndex]);
+    }
+  };
 
-    /* HATA KUTUSU */
-    .error-box { background-color: #fef2f2 !important; border: 2px solid #ef4444; padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 20px; }
-    .error-text { font-size: 30px; font-weight: bold; color: #b91c1c !important; }
+  const handleNext = () => {
+    if (currentIndex < getCurrentProblems().length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setUserAnswer('');
+      setIsAnswerVisible(true);
+      setIsCovered(false);
+      setShowCheck(false);
+      setIsCorrect(null);
+    } else {
+      alert(`Tebrikler! ${score + (isCorrect ? 1 : 0)}/${getCurrentProblems().length} doğru yaptınız!`);
+    }
+  };
 
-    /* --- ANA MENÜ BUTONLARI (YEŞİL VE MOR) --- */
-    /* Sol Kolon (Yeşil) */
-    div[data-testid="column"]:nth-of-type(1) div.stButton > button {
-        background-color: #22c55e !important; color: white !important; border: none !important; height: 150px; font-size: 22px !important; border-radius: 15px !important; box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.4);
-    }
-    div[data-testid="column"]:nth-of-type(1) div.stButton > button:hover { background-color: #16a34a !important; transform: scale(1.02); }
-    div[data-testid="column"]:nth-of-type(1) div.stButton > button p { color: white !important; }
+  const handleRetry = () => {
+    setUserAnswer('');
+    setIsAnswerVisible(true);
+    setIsCovered(false);
+    setShowCheck(false);
+    setIsCorrect(null);
+  };
 
-    /* Sağ Kolon (Mor) */
-    div[data-testid="column"]:nth-of-type(2) div.stButton > button {
-        background-color: #a855f7 !important; color: white !important; border: none !important; height: 150px; font-size: 22px !important; border-radius: 15px !important; box-shadow: 0 4px 6px -1px rgba(168, 85, 247, 0.4);
-    }
-    div[data-testid="column"]:nth-of-type(2) div.stButton > button:hover { background-color: #9333ea !important; transform: scale(1.02); }
-    div[data-testid="column"]:nth-of-type(2) div.stButton > button p { color: white !important; }
+  const resetOgretim = () => {
+    setCurrentIndex(0);
+    setUserAnswer('');
+    setIsAnswerVisible(true);
+    setIsCovered(false);
+    setShowCheck(false);
+    setIsCorrect(null);
+    setScore(0);
+    setCompletedProblems([]);
+  };
 
-    /* STANDART BUTONLAR */
-    .stButton > button { background-color: white; color: #334155; border: 2px solid #cbd5e1; border-radius: 12px; height: 60px; font-size: 20px; font-weight: bold; }
-    .stButton > button:hover { border-color: #3b82f6; color: #3b82f6 !important; background-color: #eff6ff; }
-    
-    /* Geri butonlarını küçült */
-    div[data-testid="stVerticalBlock"] > div > div[data-testid="stButton"] > button { height: auto !important; padding: 10px !important; font-size: 16px !important; }
+  // Değerlendirme işlemleri - karışık 20 soru
+  const degerlendirmeProblemleri = [
+    { sayi1: 3, sayi2: 4 }, { sayi1: 7, sayi2: 8 }, { sayi1: 2, sayi2: 6 }, { sayi1: 9, sayi2: 9 },
+    { sayi1: 4, sayi2: 5 }, { sayi1: 6, sayi2: 7 }, { sayi1: 3, sayi2: 8 }, { sayi1: 5, sayi2: 5 },
+    { sayi1: 8, sayi2: 9 }, { sayi1: 2, sayi2: 7 }, { sayi1: 6, sayi2: 6 }, { sayi1: 4, sayi2: 9 },
+    { sayi1: 3, sayi2: 7 }, { sayi1: 5, sayi2: 8 }, { sayi1: 7, sayi2: 7 }, { sayi1: 2, sayi2: 9 },
+    { sayi1: 6, sayi2: 8 }, { sayi1: 4, sayi2: 7 }, { sayi1: 8, sayi2: 8 }, { sayi1: 5, sayi2: 9 }
+  ];
 
-    /* --- SEVİYE SEÇİM EKRANI STİLİ --- */
-    /* Kolay Butonu (Yeşil) - CSS ile hedefleme */
-    /* Bu stiller Level Selection ekranında özel olarak kullanılır */
-</style>
-""", unsafe_allow_html=True)
+  const handleDegerlendirmeSubmit = () => {
+    let correctCount = 0;
+    degerlendirmeProblemleri.forEach((problem, index) => {
+      const userAns = parseInt(degerlendirmeAnswers[index]);
+      if (userAns === problem.sayi1 * problem.sayi2) {
+        correctCount++;
+      }
+    });
+    setScore(correctCount);
+    setDegerlendirmeComplete(true);
+  };
 
-# --- 3. VERİLER ---
-DIFFICULTY_LEVELS = {
-    "Basit": [
-        {"q": "2 x 2", "a": 4}, {"q": "2 x 3", "a": 6}, {"q": "2 x 4", "a": 8}, {"q": "2 x 5", "a": 10},
-        {"q": "3 x 3", "a": 9}, {"q": "3 x 4", "a": 12}, {"q": "3 x 5", "a": 15},
-        {"q": "4 x 4", "a": 16}, {"q": "4 x 5", "a": 20}, {"q": "5 x 5", "a": 25}
-    ],
-    "Orta": [
-        {"q": "2 x 6", "a": 12}, {"q": "2 x 7", "a": 14}, {"q": "2 x 8", "a": 16}, {"q": "2 x 9", "a": 18},
-        {"q": "3 x 6", "a": 18}, {"q": "3 x 7", "a": 21}, {"q": "3 x 8", "a": 24}, {"q": "3 x 9", "a": 27},
-        {"q": "4 x 6", "a": 24}, {"q": "4 x 7", "a": 28}, {"q": "4 x 8", "a": 32}, {"q": "4 x 9", "a": 36}
-    ],
-    "Zor": [
-        {"q": "6 x 6", "a": 36}, {"q": "6 x 7", "a": 42}, {"q": "6 x 8", "a": 48}, {"q": "6 x 9", "a": 54},
-        {"q": "7 x 7", "a": 49}, {"q": "7 x 8", "a": 56}, {"q": "7 x 9", "a": 63},
-        {"q": "8 x 8", "a": 64}, {"q": "8 x 9", "a": 72}, {"q": "9 x 9", "a": 81}
-    ]
-}
+  const resetDegerlendirme = () => {
+    setDegerlendirmeAnswers({});
+    setDegerlendirmeComplete(false);
+    setScore(0);
+  };
 
-# --- 4. YÖNETİCİ SINIFI ---
-class CCCManager:
-    def __init__(self):
-        if 'manager_initialized' not in st.session_state:
-            self._reset_state()
-            st.session_state['manager_initialized'] = True
+  if (mode === 'menu') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 mb-8">
+            <h1 className="text-4xl font-bold text-center text-indigo-800 mb-4">
+              Kapat-Kopyala-Karşılaştır
+            </h1>
+            <h2 className="text-2xl text-center text-indigo-600 mb-8">
+              Çarpım Tablosu Öğretimi
+            </h2>
+            
+            <div className="bg-indigo-50 rounded-lg p-6 mb-8">
+              <h3 className="font-semibold text-lg mb-3 text-indigo-900">Nasıl Çalışır?</h3>
+              <ol className="space-y-2 text-gray-700">
+                <li><span className="font-semibold">1. Oku:</span> İşlemi ve cevabını oku</li>
+                <li><span className="font-semibold">2. Kapat:</span> İşlemi kapat</li>
+                <li><span className="font-semibold">3. Yaz:</span> İşlemi ezberden yaz</li>
+                <li><span className="font-semibold">4. Karşılaştır:</span> Cevabını kontrol et</li>
+              </ol>
+            </div>
 
-    def _reset_state(self):
-        st.session_state.update({
-            'current_phase': 'MENU',
-            'difficulty': 'Basit',
-            'question_queue': [],
-            'current_q_index': 0,
-            'learning_step': 0,
-            'assessment_score': 0,
-            'current_options': [],
-            'show_error_screen': False
-        })
+            <div className="grid md:grid-cols-2 gap-6">
+              <button
+                onClick={() => setMode('ogretim')}
+                className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl p-8 hover:from-green-600 hover:to-green-700 transition transform hover:scale-105 shadow-lg"
+              >
+                <BookOpen className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold mb-2">Öğretim Modu</h3>
+                <p className="text-green-100">Çarpım tablosunu adım adım öğren</p>
+              </button>
 
-    def generate_options(self, correct_ans):
-        options = {correct_ans}
-        while len(options) < 3:
-            fake = correct_ans + random.randint(-5, 5)
-            if fake > 0 and fake != correct_ans:
-                options.add(fake)
-        opt_list = list(options)
-        random.shuffle(opt_list)
-        st.session_state['current_options'] = opt_list
+              <button
+                onClick={() => setMode('degerlendirme')}
+                className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl p-8 hover:from-purple-600 hover:to-purple-700 transition transform hover:scale-105 shadow-lg"
+              >
+                <ClipboardCheck className="w-16 h-16 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold mb-2">Değerlendirme</h3>
+                <p className="text-purple-100">Öğrendiklerini test et (20 soru)</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-    def start_learning(self, difficulty):
-        questions = DIFFICULTY_LEVELS[difficulty].copy()
-        random.shuffle(questions)
-        st.session_state.update({
-            'difficulty': difficulty,
-            'question_queue': questions,
-            'current_q_index': 0,
-            'learning_step': 0,
-            'current_phase': 'LEARNING',
-            'show_error_screen': False
-        })
+  if (mode === 'ogretim') {
+    if (!zorlukSeviyesi) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+          <div className="max-w-3xl mx-auto">
+            <button
+              onClick={() => setMode('menu')}
+              className="mb-6 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+            >
+              ← Ana Menü
+            </button>
+            
+            <div className="bg-white rounded-2xl shadow-2xl p-8">
+              <h2 className="text-3xl font-bold text-center text-indigo-800 mb-8">
+                Zorluk Seviyesi Seç
+              </h2>
+              
+              <div className="space-y-4">
+                <button
+                  onClick={() => setZorlukSeviyesi('kolay')}
+                  className="w-full bg-green-500 text-white rounded-xl p-6 hover:bg-green-600 transition shadow-lg"
+                >
+                  <h3 className="text-2xl font-bold mb-2">Kolay</h3>
+                  <p className="text-green-100">2, 3, 4, 5 sayılarının birbirleriyle çarpımı</p>
+                </button>
 
-    def start_assessment(self):
-        all_q = [q for level in DIFFICULTY_LEVELS.values() for q in level]
-        st.session_state.update({
-            'question_queue': random.sample(all_q, 10),
-            'current_q_index': 0,
-            'assessment_score': 0,
-            'current_phase': 'ASSESSMENT'
-        })
-        self.generate_options(st.session_state['question_queue'][0]['a'])
+                <button
+                  onClick={() => setZorlukSeviyesi('orta')}
+                  className="w-full bg-yellow-500 text-white rounded-xl p-6 hover:bg-yellow-600 transition shadow-lg"
+                >
+                  <h3 className="text-2xl font-bold mb-2">Orta</h3>
+                  <p className="text-yellow-100">2, 3, 4, 5 sayılarının 6, 7, 8, 9 ile çarpımı</p>
+                </button>
 
-# --- 5. ANA UYGULAMA ---
-def main():
-    manager = CCCManager()
-    phase = st.session_state['current_phase']
+                <button
+                  onClick={() => setZorlukSeviyesi('zor')}
+                  className="w-full bg-red-500 text-white rounded-xl p-6 hover:bg-red-600 transition shadow-lg"
+                >
+                  <h3 className="text-2xl font-bold mb-2">Zor</h3>
+                  <p className="text-red-100">6, 7, 8, 9 sayılarının birbirleriyle çarpımı</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-    # --- BAŞLIK HER SAYFADA SABİT OLMASIN, SADECE MENÜDE OLSUN ---
-    if phase == 'MENU':
-        st.markdown("<h1>Kapat-Kopyala-Karşılaştır</h1>", unsafe_allow_html=True)
-        st.markdown("<div class='subtitle'>Çarpım Tablosu Öğretimi</div>", unsafe_allow_html=True)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <button
+              onClick={() => {
+                setZorlukSeviyesi(null);
+                resetOgretim();
+              }}
+              className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+            >
+              ← Geri
+            </button>
+            <div className="text-lg font-semibold text-indigo-800">
+              Soru {currentIndex + 1} / {getCurrentProblems().length}
+            </div>
+            <div className="text-lg font-semibold text-green-600">
+              Puan: {score}
+            </div>
+          </div>
 
-    # --- ANA MENÜ ---
-    if phase == 'MENU':
-        st.markdown("""
-        <div class="info-box">
-            <h3>Nasıl Çalışır?</h3>
-            <ul>
-                <li><b>1. Oku:</b> İşlemi ve cevabını dikkatlice incele.</li>
-                <li><b>2. Kapat:</b> Butona basarak cevabı gizle.</li>
-                <li><b>3. Seç:</b> Doğru cevabı seçeneklerden bul.</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            <div className="grid grid-cols-3 gap-6 mb-8">
+              {/* Sütun 1: İşlem ve Cevap */}
+              <div className={`relative border-2 border-indigo-300 rounded-lg p-8 bg-indigo-50 transition-all duration-500 min-h-[200px] flex items-center justify-center ${isCovered ? 'scale-95' : 'scale-100'}`}>
+                <div className={`text-center transition-all duration-500 transform ${isCovered ? 'rotate-y-90 opacity-0' : 'rotate-y-0 opacity-100'}`}>
+                  <div className="text-2xl font-bold text-indigo-800 whitespace-nowrap">
+                    {currentProblem.sayi1} × {currentProblem.sayi2}{isAnswerVisible && <span className="text-green-600"> = {currentProblem.sayi1 * currentProblem.sayi2}</span>}
+                  </div>
+                </div>
+                {isCovered && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400 rounded-lg flex items-center justify-center transform transition-all duration-500 shadow-xl">
+                    <div className="text-gray-600 font-semibold text-lg rotate-[-5deg]">
+                      Kapalı
+                    </div>
+                  </div>
+                )}
+              </div>
 
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("📖\nÖğretim Modu\n(Adım Adım)", use_container_width=True):
-                st.session_state['current_phase'] = 'LEVEL_SELECTION'
-                st.rerun()
+              {/* Sütun 2: Öğrenci Cevabı */}
+              <div className="border-2 border-blue-300 rounded-lg p-8 bg-blue-50 min-h-[200px] flex items-center justify-center">
+                <div className="text-center w-full">
+                  <div className="text-2xl font-bold text-blue-800 flex items-center justify-center gap-2">
+                    <span className="whitespace-nowrap">{currentProblem.sayi1} × {currentProblem.sayi2} =</span>
+                    <input
+                      type="number"
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      disabled={!isCovered}
+                      className="w-20 text-2xl font-bold text-center border-2 border-blue-400 rounded-lg p-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder="?"
+                    />
+                  </div>
+                </div>
+              </div>
 
-        with col2:
-            if st.button("🚀\nDeğerlendirme\n(Kendini Test Et)", use_container_width=True):
-                manager.start_assessment()
-                st.rerun()
+              {/* Sütun 3: Kontrol */}
+              <div className="border-2 border-purple-300 rounded-lg p-8 bg-purple-50 flex items-center justify-center min-h-[200px]">
+                {showCheck && (
+                  <div className="text-center animate-bounce">
+                    {isCorrect ? (
+                      <Check className="w-20 h-20 text-green-500 mx-auto" />
+                    ) : (
+                      <X className="w-20 h-20 text-red-500 mx-auto" />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
-    # --- SEVİYE SEÇİM EKRANI (YENİ) ---
-    elif phase == 'LEVEL_SELECTION':
-        # Sol üst geri butonu
-        if st.button("⬅️ Ana Menü"):
-            manager._reset_state()
-            st.rerun()
+            <div className="flex flex-col gap-4">
+              {!isCovered && !showCheck && (
+                <button
+                  onClick={handleCover}
+                  className="w-full bg-indigo-600 text-white rounded-lg py-4 text-xl font-semibold hover:bg-indigo-700 transition"
+                >
+                  2. Kapat
+                </button>
+              )}
 
-        st.markdown("<h2 style='text-align: center; color: #334155;'>Zorluk Seviyesi Seç</h2>", unsafe_allow_html=True)
-        st.write("")
+              {isCovered && !showCheck && (
+                <button
+                  onClick={handleUncover}
+                  disabled={!userAnswer}
+                  className="w-full bg-green-600 text-white rounded-lg py-4 text-xl font-semibold hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  4. Karşılaştır
+                </button>
+              )}
 
-        # Butonlar için özel stiller
-        st.markdown("""
-        <style>
-            /* 1. Buton (Kolay) - Yeşil */
-            div.row-widget.stButton:nth-of-type(2) button {
-                background-color: #22c55e !important; color: white !important; border: none; height: 100px;
-            }
-            div.row-widget.stButton:nth-of-type(2) button:hover { background-color: #16a34a !important; transform: scale(1.02); }
-            div.row-widget.stButton:nth-of-type(2) button p { color: white !important; font-size: 24px; font-weight: bold; }
-            
-            /* 2. Buton (Orta) - Turuncu */
-            div.row-widget.stButton:nth-of-type(3) button {
-                background-color: #eab308 !important; color: white !important; border: none; height: 100px;
-            }
-            div.row-widget.stButton:nth-of-type(3) button:hover { background-color: #ca8a04 !important; transform: scale(1.02); }
-            div.row-widget.stButton:nth-of-type(3) button p { color: white !important; font-size: 24px; font-weight: bold; }
-            
-            /* 3. Buton (Zor) - Kırmızı */
-            div.row-widget.stButton:nth-of-type(4) button {
-                background-color: #ef4444 !important; color: white !important; border: none; height: 100px;
-            }
-            div.row-widget.stButton:nth-of-type(4) button:hover { background-color: #dc2626 !important; transform: scale(1.02); }
-            div.row-widget.stButton:nth-of-type(4) button p { color: white !important; font-size: 24px; font-weight: bold; }
-            
-            .desc { font-size: 14px; color: white; display: block; margin-top: 5px; opacity: 0.9; }
-        </style>
-        """, unsafe_allow_html=True)
+              {showCheck && (
+                <div className="flex gap-4">
+                  {isCorrect ? (
+                    <button
+                      onClick={handleNext}
+                      className="flex-1 bg-green-600 text-white rounded-lg py-4 text-xl font-semibold hover:bg-green-700 transition"
+                    >
+                      {currentIndex < getCurrentProblems().length - 1 ? 'Sonraki Soru →' : 'Tamamla'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleRetry}
+                      className="flex-1 bg-orange-600 text-white rounded-lg py-4 text-xl font-semibold hover:bg-orange-700 transition flex items-center justify-center gap-2"
+                    >
+                      <RotateCcw className="w-6 h-6" />
+                      Tekrar Dene
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-        # 1. Kolay Buton
-        if st.button("Kolay\n2, 3, 4, 5 sayılarının birbirleriyle çarpımı", use_container_width=True):
-            manager.start_learning("Basit")
-            st.rerun()
+  if (mode === 'degerlendirme') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-8">
+        <div className="max-w-5xl mx-auto">
+          <button
+            onClick={() => {
+              setMode('menu');
+              resetDegerlendirme();
+            }}
+            className="mb-6 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+          >
+            ← Ana Menü
+          </button>
 
-        # 2. Orta Buton
-        if st.button("Orta\n2, 3, 4, 5 sayılarının 6, 7, 8, 9 ile çarpımı", use_container_width=True):
-            manager.start_learning("Orta")
-            st.rerun()
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            <h2 className="text-3xl font-bold text-center text-purple-800 mb-8">
+              Değerlendirme Testi
+            </h2>
 
-        # 3. Zor Buton
-        if st.button("Zor\n6, 7, 8, 9 sayılarının birbirleriyle çarpımı", use_container_width=True):
-            manager.start_learning("Zor")
-            st.rerun()
+            {!degerlendirmeComplete ? (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  {degerlendirmeProblemleri.map((problem, index) => (
+                    <div key={index} className="border-2 border-purple-300 rounded-lg p-4 bg-purple-50">
+                      <div className="text-center mb-2">
+                        <span className="text-sm font-semibold text-purple-600">Soru {index + 1}</span>
+                      </div>
+                      <div className="text-xl font-bold text-purple-800 text-center mb-2">
+                        {problem.sayi1} × {problem.sayi2} =
+                      </div>
+                      <input
+                        type="number"
+                        value={degerlendirmeAnswers[index] || ''}
+                        onChange={(e) => setDegerlendirmeAnswers({
+                          ...degerlendirmeAnswers,
+                          [index]: e.target.value
+                        })}
+                        className="w-full text-center text-lg font-bold border-2 border-purple-300 rounded-lg p-2"
+                        placeholder="?"
+                      />
+                    </div>
+                  ))}
+                </div>
 
-    # --- ÖĞRENME MODU ---
-    elif phase == 'LEARNING':
-        if st.button("⬅️ Seviye Seçimi"):
-            st.session_state['current_phase'] = 'LEVEL_SELECTION'
-            st.rerun()
+                <button
+                  onClick={handleDegerlendirmeSubmit}
+                  disabled={Object.keys(degerlendirmeAnswers).length < degerlendirmeProblemleri.length}
+                  className="w-full bg-purple-600 text-white rounded-lg py-4 text-xl font-semibold hover:bg-purple-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Testi Tamamla
+                </button>
+              </>
+            ) : (
+              <div className="text-center">
+                <Award className="w-24 h-24 text-yellow-500 mx-auto mb-6" />
+                <h3 className="text-4xl font-bold text-purple-800 mb-4">
+                  Test Tamamlandı!
+                </h3>
+                <div className="text-6xl font-bold text-green-600 mb-8">
+                  {score} / {degerlendirmeProblemleri.length}
+                </div>
+                <div className="text-2xl text-gray-700 mb-8">
+                  Başarı Oranı: {Math.round((score / degerlendirmeProblemleri.length) * 100)}%
+                </div>
 
-        # HATA EKRANI KONTROLÜ
-        if st.session_state.get('show_error_screen'):
-            st.markdown("""
-            <div class="error-box">
-                <div class="error-text">❌ Yanlış Cevap!</div>
-                <p>Üzülme, işlemi tekrar incelememiz gerekiyor.</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            if st.button("🔄 Tekrar Dene (Başa Dön)", type="primary", use_container_width=True):
-                st.session_state['show_error_screen'] = False
-                st.session_state['learning_step'] = 0
-                st.rerun()
-                
-        else:
-            q_idx = st.session_state['current_q_index']
-            queue = st.session_state['question_queue']
-            current_q = queue[q_idx]
-            step = st.session_state['learning_step']
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  {degerlendirmeProblemleri.map((problem, index) => {
+                    const userAns = parseInt(degerlendirmeAnswers[index]);
+                    const correctAns = problem.sayi1 * problem.sayi2;
+                    const isCorrect = userAns === correctAns;
 
-            st.progress((q_idx) / len(queue))
-            st.caption(f"İlerleme: {q_idx + 1}/{len(queue)} - {st.session_state['difficulty']}")
+                    return (
+                      <div
+                        key={index}
+                        className={`border-2 rounded-lg p-4 ${
+                          isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'
+                        }`}
+                      >
+                        <div className="text-center mb-2">
+                          <span className="text-sm font-semibold">Soru {index + 1}</span>
+                        </div>
+                        <div className="text-lg font-bold text-center mb-1">
+                          {problem.sayi1} × {problem.sayi2}
+                        </div>
+                        <div className="text-center">
+                          <div className={`font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                            Senin: {userAns || '-'}
+                          </div>
+                          {!isCorrect && (
+                            <div className="text-green-600 font-bold">
+                              Doğru: {correctAns}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-            if step == 0: # GÖR
-                st.markdown(f"""
-                <div class="card">
-                    <div class="big-text">{current_q['q']} = {current_q['a']}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                <button
+                  onClick={resetDegerlendirme}
+                  className="bg-purple-600 text-white rounded-lg py-4 px-8 text-xl font-semibold hover:bg-purple-700 transition"
+                >
+                  Tekrar Dene
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+};
 
-                if st.button("🙈 Kapat ve Cevapla", use_container_width=True):
-                    manager.generate_options(current_q['a'])
-                    st.session_state['learning_step'] = 1
-                    st.rerun()
-
-            elif step == 1: # KAPAT/SEÇ
-                # Üstte Kapalı Kutu
-                st.markdown("""
-                <div class="covered-box">
-                    🙈 CEVAP GİZLENDİ
-                </div>
-                """, unsafe_allow_html=True)
-
-                # Altta Soru
-                st.markdown(f"""
-                <div class="question-box">
-                    <div class="question-text">{current_q['q']} = ?</div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Seçenekler
-                cols = st.columns(3)
-                for i, opt in enumerate(st.session_state['current_options']):
-                    if cols[i].button(str(opt), key=f"opt_{i}", use_container_width=True):
-                        if opt == current_q['a']:
-                            if q_idx < len(queue) - 1:
-                                st.session_state['current_q_index'] += 1
-                                st.session_state['learning_step'] = 0
-                            else:
-                                st.session_state['current_phase'] = 'COMPLETED_LEARNING'
-                        else:
-                            st.session_state['show_error_screen'] = True
-                        st.rerun()
-                        
-                # Unuttum Butonu
-                st.write("")
-                if st.button("👀 Unuttum, Cevaba Bak"):
-                    st.session_state['learning_step'] = 0
-                    st.rerun()
-
-    # --- DEĞERLENDİRME MODU ---
-    elif phase == 'ASSESSMENT':
-        if st.button("⬅️ Sınavdan Çık"):
-            manager._reset_state()
-            st.rerun()
-
-        q_idx = st.session_state['current_q_index']
-        queue = st.session_state['question_queue']
-        current_q = queue[q_idx]
-
-        st.subheader(f"Soru {q_idx + 1} / 10")
-        
-        st.markdown(f"""
-        <div class="card" style="border-color: #a855f7;">
-            <div class="big-text" style="color: #6b21a8 !important;">{current_q['q']} = ?</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        cols = st.columns(3)
-        for i, opt in enumerate(st.session_state['current_options']):
-            if cols[i].button(str(opt), key=f"assess_{i}", use_container_width=True):
-                if opt == current_q['a']:
-                    st.session_state['assessment_score'] += 1
-                
-                if q_idx < len(queue) - 1:
-                    st.session_state['current_q_index'] += 1
-                    manager.generate_options(queue[q_idx+1]['a'])
-                else:
-                    st.session_state['current_phase'] = 'COMPLETED_ASSESSMENT'
-                st.rerun()
-
-    # --- TAMAMLANMA ---
-    elif phase == 'COMPLETED_LEARNING':
-        st.balloons()
-        st.success("Tebrikler! Seviye Tamamlandı.")
-        if st.button("Seviye Seçimine Dön", use_container_width=True):
-            st.session_state['current_phase'] = 'LEVEL_SELECTION'
-            st.rerun()
-
-    elif phase == 'COMPLETED_ASSESSMENT':
-        score = st.session_state['assessment_score']
-        st.balloons()
-        st.markdown(f"""
-        <div class="card">
-            <h2>Puanın</h2>
-            <div style="font-size: 80px; color: #4338ca !important;">{score} / 10</div>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Ana Menü", use_container_width=True):
-            manager._reset_state()
-            st.rerun()
-
-if __name__ == "__main__":
-    main()
+export default CarpimTablosuApp;  bu kod olur mu
